@@ -1,0 +1,12 @@
+node_modules/
+.pi/
+.DS_Store
+*.log
+*.tgz
+
+autoresearch.checks.sh
+autoresearch.ideas.md
+autoresearch.jsonl
+autoresearch.md
+autoresearch.sh
+scripts/benchmark-session-history-*.cjs

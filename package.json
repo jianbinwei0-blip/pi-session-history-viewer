@@ -1,0 +1,42 @@
+{
+  "name": "pi-session-history-viewer",
+  "version": "0.1.0",
+  "description": "Pi extension for browsing saved session history in a fast HTML viewer.",
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "session-history",
+    "transcript-viewer",
+    "html-viewer"
+  ],
+  "author": "Jianbin Wei",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jianbinwei0-blip/pi-session-history-viewer.git"
+  },
+  "homepage": "https://github.com/jianbinwei0-blip/pi-session-history-viewer#readme",
+  "bugs": {
+    "url": "https://github.com/jianbinwei0-blip/pi-session-history-viewer/issues"
+  },
+  "files": [
+    "extensions/",
+    "README.md",
+    "LICENSE"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions"
+    ]
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-tui": "*"
+  },
+  "devDependencies": {
+    "happy-dom": "^17.6.3"
+  }
+}
