@@ -331,7 +331,7 @@ test('HTML viewer renders overview, prompt, sidebar previews, and transcript bod
   const modeButtons = [...document.querySelectorAll('#modeButtons button')].map((button) => button.textContent);
   assert.deepEqual(modeButtons, ['📜 All entries', '⑂ Current branch']);
   assert.ok(document.getElementById('sessionCard').textContent.includes('Conversation overview'));
-  assert.ok(document.getElementById('promptCard').textContent.includes('How this conversation started'));
+  assert.equal(document.getElementById('promptCard').style.display, 'none');
   assert.ok(document.getElementById('detailCard').textContent.includes('Need help debugging the session history viewer.'));
   assert.ok(document.getElementById('detailCard').textContent.includes('Let\'s inspect the renderer before making changes.'));
 
@@ -409,10 +409,71 @@ test('advanced details toggle reveals technical metadata such as tools and model
   await new Promise((resolve) => setTimeout(resolve, 20));
 
   const toolsText = document.getElementById('toolsCard').textContent;
+  const sessionText = document.getElementById('sessionCard').textContent;
   assert.ok(toolsText.includes('Technical details'));
   assert.ok(toolsText.includes('search_files'));
   assert.ok(toolsText.includes('anthropic/sonnet'));
-  assert.ok(document.getElementById('sessionCard').textContent.includes('/tmp/session-test.jsonl'));
+  assert.ok(sessionText.includes('/tmp/session-test.jsonl'));
+  assert.equal(sessionText.includes('Models:'), false);
+
+  window.close();
+});
+
+test('prompt card stays hidden when the opening prompt is already visible in the transcript', async () => {
+  const { document, window } = await bootViewer();
+
+  assert.equal(document.getElementById('promptCard').style.display, 'none');
+  const toolsButton = buttonByText(document, 'Tool activity');
+  assert.ok(toolsButton, 'expected Tool activity role chip');
+  toolsButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(document.getElementById('promptCard').style.display, 'none');
+
+  window.close();
+});
+
+test('single-line transcript previews are not duplicated above identical body text', async () => {
+  const session = createSampleSession();
+  session.entries = [
+    {
+      type: 'message',
+      id: 'u1',
+      parentId: null,
+      timestamp: '2026-04-07T10:00:00.000Z',
+      message: {
+        role: 'user',
+        content: [{ type: 'text', text: 'Show me the latest task updates.' }]
+      }
+    },
+    {
+      type: 'message',
+      id: 'a1',
+      parentId: 'u1',
+      timestamp: '2026-04-07T10:00:05.000Z',
+      message: {
+        role: 'assistant',
+        provider: 'anthropic',
+        model: 'sonnet',
+        content: [{ type: 'toolCall', name: 'TaskUpdate' }]
+      }
+    }
+  ];
+  session.branchEntries = session.entries;
+  session.firstMessage = 'Show me the latest task updates.';
+  const { document, window } = await bootViewer({ session });
+
+  const assistantButton = [...document.querySelectorAll('#entryList [data-id]')].find((button) => button.getAttribute('data-id') === 'a1');
+  assert.ok(assistantButton, 'expected assistant entry in sidebar');
+  assistantButton.click();
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  const transcriptEntry = document.querySelector('[data-transcript-id="a1"]');
+  assert.ok(transcriptEntry, 'expected selected transcript entry');
+  const previewLine = transcriptEntry.querySelector('.transcript-entry-meta');
+  assert.equal(previewLine, null);
+  const bodyText = transcriptEntry.querySelector('pre').textContent;
+  assert.equal(bodyText, '[Tool call] TaskUpdate');
 
   window.close();
 });

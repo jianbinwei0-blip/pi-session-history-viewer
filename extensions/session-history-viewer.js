@@ -1417,6 +1417,9 @@ function firstMeaningfulLine(text) {
     .filter((line) => !ignoredPrefixes.some((prefix) => line.startsWith(prefix)));
   return lines[0] || '';
 }
+function normalizeComparableText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
 function entryRoleLabel(entry) {
   if (entry.role === 'user') return 'You';
   if (entry.role === 'assistant') return 'Pi';
@@ -1800,7 +1803,6 @@ function renderSessionCard(entries) {
     + (showAdvancedDetails
       ? '<dl class="meta-grid" style="margin-top:14px;">'
         + '<dt>Conversation ID:</dt><dd>' + escapeHtml(data.session.id) + '</dd>'
-        + '<dt>Models:</dt><dd>' + escapeHtml((data.session.observedModels || []).join(', ') || '(none inferred)') + '</dd>'
         + '<dt>Total items:</dt><dd>' + escapeHtml(String(counts.all.entries)) + '</dd>'
         + '<dt>File path:</dt><dd class="pre-wrap">' + escapeHtml(data.session.path) + '</dd>'
       + '</dl>'
@@ -1826,8 +1828,10 @@ function renderSessionCard(entries) {
     exportSnapshot(entries);
   });
 }
-function renderPromptCard() {
-  if (!data.session.firstPrompt) {
+function renderPromptCard(entries) {
+  const firstPrompt = normalizeComparableText(data.session.firstPrompt);
+  const promptAlreadyVisible = firstPrompt && entries.some((entry) => normalizeComparableText(entryDisplayText(entry)) === firstPrompt);
+  if (!firstPrompt || promptAlreadyVisible) {
     promptCardEl.style.display = 'none';
     promptCardEl.innerHTML = '';
     return;
@@ -1895,8 +1899,10 @@ function renderTranscriptEntry(entry, groupKind) {
   const selectedTarget = selectedId && entry.id === selectedId && entry.id !== currentMomentId ? 'selected-target' : '';
   const toolish = isToolishEntry(entry) ? 'toolish' : '';
   const displayText = entryDisplayText(entry);
+  const previewText = entryPreview(entry);
   const technicalText = getRawLineText(entry);
   const showTechnicalBlock = showAdvancedDetails && technicalText && technicalText !== displayText;
+  const showPreviewLine = normalizeComparableText(previewText) && normalizeComparableText(previewText) !== normalizeComparableText(displayText);
   return ''
     + '<article class="transcript-entry ' + active + ' ' + selectedTarget + ' ' + groupKind + ' ' + toolish + '" data-transcript-id="' + escapeHtml(entry.id) + '">'
     +   '<div class="transcript-entry-header">'
@@ -1906,7 +1912,7 @@ function renderTranscriptEntry(entry, groupKind) {
     +         '<span>' + escapeHtml(entryRoleLabel(entry)) + '</span>'
     +         (showAdvancedDetails ? '<span class="pill">#' + escapeHtml(String(entry.index).padStart(4, '0')) + '</span>' : '')
     +       '</div>'
-    +       '<div class="transcript-entry-meta">' + escapeHtml(entryPreview(entry)) + '</div>'
+    +       (showPreviewLine ? '<div class="transcript-entry-meta">' + escapeHtml(previewText) + '</div>' : '')
     +       (meta ? '<div class="inline-list"><span>' + escapeHtml(meta) + '</span></div>' : '')
     +     '</div>'
     +     (showAdvancedDetails ? '<div class="inline-list"><span>Reference:</span><span class="kbd">#' + escapeHtml(entry.id) + '</span></div>' : '')
@@ -2031,7 +2037,7 @@ function render(scrollTranscript) {
   renderRoleChips(modeEntries);
   ensureSelection(modeEntries);
   renderSessionCard(modeEntries);
-  renderPromptCard();
+  renderPromptCard(modeEntries);
   renderToolsCard();
   renderEntryList(sidebarEntries);
   renderDetailCard(modeEntries, sidebarEntries);
