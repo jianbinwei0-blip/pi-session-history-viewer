@@ -330,7 +330,9 @@ test('HTML viewer renders overview, prompt, sidebar previews, and transcript bod
   assert.doesNotMatch(html, /rawTextData/);
   const modeButtons = [...document.querySelectorAll('#modeButtons button')].map((button) => button.textContent);
   assert.deepEqual(modeButtons, ['📜 All entries', '⑂ Current branch']);
-  assert.ok(document.getElementById('sessionCard').textContent.includes('Conversation overview'));
+  const sessionCardText = document.getElementById('sessionCard').textContent;
+  assert.ok(sessionCardText.includes('Conversation overview'));
+  assert.ok(sessionCardText.includes('Need help debugging the session history viewer.'));
   assert.equal(document.getElementById('promptCard').style.display, 'none');
   assert.ok(document.getElementById('detailCard').textContent.includes('Need help debugging the session history viewer.'));
   assert.ok(document.getElementById('detailCard').textContent.includes('Let\'s inspect the renderer before making changes.'));
@@ -341,6 +343,42 @@ test('HTML viewer renders overview, prompt, sidebar previews, and transcript bod
   assert.equal(document.body.textContent.includes('Conversation viewer error'), false);
 
   window.close();
+});
+
+test('HTML viewer preserves lowercase s characters in the conversation overview summary', async () => {
+  const session = createSampleSession();
+  session.firstMessage = 'based on the notion page "Genesis Phase 1 — Technical Architecture", how should I start to implement it? assume it is a greenfield project';
+  session.entries = session.entries.map((entry) => {
+    if (entry?.type === 'message' && entry.message?.role === 'user' && entry.id === 'u1') {
+      return {
+        ...entry,
+        message: {
+          ...entry.message,
+          content: [{ type: 'text', text: session.firstMessage }]
+        }
+      };
+    }
+    return entry;
+  });
+
+  const { document, window } = await bootViewer({ session });
+  const overviewText = document.querySelector('.friendly-summary').textContent;
+  assert.ok(overviewText.includes(session.firstMessage));
+  assert.ok(overviewText.includes('Genesis Phase 1'));
+  assert.ok(overviewText.includes('should I start'));
+  assert.ok(overviewText.includes('assume it is'));
+
+  window.close();
+});
+
+test('generated inline viewer script preserves escaped regex and newline sequences', () => {
+  const html = helpers.buildHistoryHtml(createSampleSession());
+  const { scripts } = extractViewerPieces(html);
+  const inlineScript = scripts.join('\n');
+
+  assert.ok(inlineScript.includes("replace(/\\s+/g, ' ').trim()"));
+  assert.ok(inlineScript.includes("replace(/\\r/g, '').split('\\n')"));
+  assert.equal(inlineScript.includes("replace(/s+/g, ' ').trim()"), false);
 });
 
 test('search filters the sidebar using serialized display text', async () => {

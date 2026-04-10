@@ -1418,7 +1418,7 @@ function firstMeaningfulLine(text) {
   return lines[0] || '';
 }
 function normalizeComparableText(text) {
-  return String(text || '').replace(/\s+/g, ' ').trim();
+  return String(text || '').replace(/\\s+/g, ' ').trim();
 }
 function entryRoleLabel(entry) {
   if (entry.role === 'user') return 'You';
@@ -1603,7 +1603,7 @@ function currentRoleLabel() {
 function conversationTopicSummary() {
   const seed = String(data.session.firstPrompt || data.session.firstMessage || '').trim();
   if (!seed) return 'This view highlights the main conversation between you and Pi.';
-  const compact = seed.replace(/\s+/g, ' ').trim();
+  const compact = seed.replace(/\\s+/g, ' ').trim();
   const short = compact.length > 170 ? compact.slice(0, 167) + '\u2026' : compact;
   return 'This conversation is mostly about: ' + short;
 }
